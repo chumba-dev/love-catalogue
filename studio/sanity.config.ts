@@ -3,6 +3,10 @@ import { structureTool } from "sanity/structure";
 import { visionTool } from "@sanity/vision";
 import { schemaTypes } from "./schemas";
 
+declare const process: {
+  env: Record<string, string | undefined>;
+};
+
 export default defineConfig({
   name: "love-catalogue",
   title: "Love Catalogue",
