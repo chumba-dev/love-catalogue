@@ -1,0 +1,43 @@
+---
+import "../styles/global.css";
+const {
+  title = "Love Catalogue",
+  description = "Thoughtful reads on love, dating, and relationships.",
+} = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <link rel="preconnect" href="https://cdn.sanity.io" />
+  </head>
+  <body>
+    <header class="border-b border-[var(--line)] bg-white">
+      <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
+        <a href="/" class="text-2xl font-bold tracking-tight">Love Catalogue</a>
+        <nav aria-label="Main navigation" class="flex gap-5 text-sm">
+          <a href="/">Home</a>
+          <a href="/category/relationships/">Relationships</a>
+          <a href="/category/dating/">Dating</a>
+          <a href="/category/love-messages/">Love Messages</a>
+          <a href="/about/">About</a>
+        </nav>
+      </div>
+    </header>
+    <main><slot /></main>
+    <footer class="mt-16 border-t border-[var(--line)] bg-white">
+      <div class="mx-auto max-w-6xl px-5 py-10 text-sm text-[var(--muted)]">
+        <p>Love Catalogue. Thoughtful reads on love, dating, and relationships.</p>
+        <div class="mt-3 flex gap-4">
+          <a href="/about/">About</a>
+          <a href="/contact/">Contact</a>
+          <a href="/privacy-policy/">Privacy Policy</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

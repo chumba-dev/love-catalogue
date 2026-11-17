@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --ink: #24211f;
+  --muted: #77716d;
+  --paper: #fffdfb;
+  --rose: #a84f62;
+  --line: #eee7e3;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+}
+a { color: inherit; text-decoration: none; }
+a:hover { color: var(--rose); }
+img { max-width: 100%; height: auto; }
+.prose-content { line-height: 1.85; font-size: 1.08rem; }
+.prose-content h2, .prose-content h3 { margin-top: 2rem; line-height: 1.25; }
+.prose-content p { margin: 1.2rem 0; }
