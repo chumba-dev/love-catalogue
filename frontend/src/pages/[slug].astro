@@ -1,43 +1,60 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
 import { sanityConfigured, sanityFetch } from "../lib/sanity";
-import { allPostSlugsQuery, postBySlugQuery } from "../lib/queries";
+import { allPostSlugsQuery, allPageSlugsQuery, postBySlugQuery, pageBySlugQuery } from "../lib/queries";
 import { imageUrl } from "../lib/images";
 import { toHTML } from "@portabletext/to-html";
 
 export async function getStaticPaths() {
   if (!sanityConfigured) return [];
-  const slugs = await sanityFetch<{ slug: string }[]>(allPostSlugsQuery).catch(() => []);
-  return slugs.map(({ slug }) => ({ params: { slug } }));
+  const [posts, pages] = await Promise.all([
+    sanityFetch<{ slug: string }[]>(allPostSlugsQuery).catch(() => []),
+    sanityFetch<{ slug: string }[]>(allPageSlugsQuery).catch(() => []),
+  ]);
+  const postSlugs = new Set(posts.map((item) => item.slug));
+  return [
+    ...posts.map(({ slug }) => ({ params: { slug }, props: { contentType: "post" } })),
+    ...pages.filter(({ slug }) => !postSlugs.has(slug)).map(({ slug }) => ({ params: { slug }, props: { contentType: "page" } })),
+  ];
 }
 
 const { slug } = Astro.params;
-const post = slug && sanityConfigured
+const { contentType } = Astro.props;
+const post = contentType === "post" && slug
   ? await sanityFetch<any>(postBySlugQuery, { slug }).catch(() => null)
   : null;
+const page = contentType === "page" && slug
+  ? await sanityFetch<any>(pageBySlugQuery, { slug }).catch(() => null)
+  : null;
 
-if (!post) return Astro.redirect("/404");
-const cover = imageUrl(post.mainImage, 1400);
-const bodyHtml = post.body ? toHTML(post.body) : "";
-const pageTitle = post.seoTitle || post.title;
-const pageDescription = post.seoDescription || post.excerpt || "";
+if (!post && !page) return Astro.redirect("/404");
+const cover = post ? imageUrl(post.mainImage, 1400) : "";
+const bodyHtml = (post?.body || page?.body) ? toHTML(post?.body || page?.body) : "";
+const pageTitle = post ? (post.seoTitle || post.title) : (page.seoTitle || page.title);
+const pageDescription = post ? (post.seoDescription || post.excerpt || "") : (page.seoDescription || "");
 ---
-<MainLayout title={`${pageTitle} | Love Catalogue`} description={pageDescription}>
-  <article class="mx-auto max-w-3xl px-5 py-12">
-    <a href={post.category ? `/category/${post.category.slug}/` : "/"} class="text-xs font-semibold uppercase tracking-[.15em] text-[var(--rose)]">
-      {post.category?.title || "Love Catalogue"}
-    </a>
-    <h1 class="mt-4 text-4xl font-bold leading-tight md:text-5xl">{post.title}</h1>
-    {post.excerpt && <p class="mt-5 text-xl leading-8 text-[var(--muted)]">{post.excerpt}</p>}
-    <div class="mt-5 text-sm text-[var(--muted)]">
-      {post.author?.name || "Love Catalogue"} · {new Date(post.publishedAt).toLocaleDateString("en", { year: "numeric", month: "long", day: "numeric" })}
-    </div>
-    {cover && <img src={cover} alt={post.imageAlt || post.title} class="mt-8 aspect-[16/9] w-full object-cover" />}
-    <div class="prose-content mt-9" set:html={bodyHtml} />
-    {post.tags?.length > 0 && (
-      <div class="mt-10 flex flex-wrap gap-2">
-        {post.tags.map((tag: any) => <a class="bg-[#f6eeeb] px-3 py-1 text-xs" href={`/tag/${tag.slug}/`}>{tag.title}</a>)}
+<MainLayout title={pageTitle + " | Love Catalogue"} description={pageDescription}>
+  {post ? (
+    <article class="mx-auto max-w-3xl px-5 py-12">
+      <div class="mb-5 text-xs font-semibold uppercase tracking-[.15em] text-[var(--rose)]">
+        <a href="/">Home</a>
+        {post.category && <span> / <a href={"/category/" + post.category.slug + "/"}>{post.category.title}</a></span>}
       </div>
-    )}
-  </article>
+      <h1 class="text-4xl font-bold leading-tight md:text-5xl">{post.title}</h1>
+      {post.excerpt && <p class="mt-5 text-xl leading-8 text-[var(--muted)]">{post.excerpt}</p>}
+      <div class="mt-5 text-sm text-[var(--muted)]">
+        {post.author?.slug ? <a href={"/author/" + post.author.slug + "/"}>{post.author.name}</a> : (post.author?.name || "Love Catalogue")}
+        {post.publishedAt && <span> · {new Date(post.publishedAt).toLocaleDateString("en", { year: "numeric", month: "long", day: "numeric" })}</span>}
+      </div>
+      {cover && <img src={cover} alt={post.imageAlt || post.title} class="mt-8 aspect-[16/9] w-full object-cover" />}
+      <div class="prose-content mt-9" set:html={bodyHtml} />
+      {post.tags?.length > 0 && <div class="mt-10 flex flex-wrap gap-2">{post.tags.map((tag: any) => <a class="bg-[#f6eeeb] px-3 py-1 text-xs" href={"/tag/" + tag.slug + "/"}>{tag.title}</a>)}</div>}
+    </article>
+  ) : (
+    <article class="mx-auto max-w-3xl px-5 py-12">
+      <p class="text-xs font-semibold uppercase tracking-[.15em] text-[var(--rose)]"><a href="/">Home</a> / Page</p>
+      <h1 class="mt-4 text-4xl font-bold leading-tight md:text-5xl">{page.title}</h1>
+      <div class="prose-content mt-9" set:html={bodyHtml} />
+    </article>
+  )}
 </MainLayout>

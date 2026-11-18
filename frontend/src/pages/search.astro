@@ -1,0 +1,61 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+---
+<MainLayout title="Search | Love Catalogue" description="Search articles about love, dating and relationships.">
+  <section class="mx-auto max-w-5xl px-5 py-12">
+    <p class="text-xs font-semibold uppercase tracking-[.2em] text-[var(--rose)]">Find an article</p>
+    <h1 class="mt-3 text-4xl font-bold md:text-5xl">Search Love Catalogue</h1>
+    <form id="search-form" class="mt-8 flex flex-col gap-3 sm:flex-row">
+      <label class="sr-only" for="search-query">Search articles</label>
+      <input id="search-query" name="q" type="search" placeholder="Try relationships, dating, love messages..." class="min-w-0 flex-1 border border-[var(--line)] bg-white px-4 py-3 outline-none focus:border-[var(--rose)]" />
+      <button class="bg-[var(--ink)] px-7 py-3 font-semibold text-white" type="submit">Search</button>
+    </form>
+    <p id="search-status" class="mt-6 text-sm text-[var(--muted)]" aria-live="polite">Enter a topic or article title to search.</p>
+    <div id="search-results" class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"></div>
+  </section>
+  <script>
+    const form = document.querySelector<HTMLFormElement>("#search-form");
+    const input = document.querySelector<HTMLInputElement>("#search-query");
+    const results = document.querySelector<HTMLDivElement>("#search-results");
+    const status = document.querySelector<HTMLParagraphElement>("#search-status");
+    const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char] || char));
+
+    async function runSearch(query: string) {
+      if (!results || !status) return;
+      results.innerHTML = "";
+      if (!query.trim()) {
+        status.textContent = "Enter a topic or article title to search.";
+        return;
+      }
+      status.textContent = "Searching articles...";
+      try {
+        const response = await fetch("/search-index.json");
+        const posts = await response.json();
+        const terms = query.toLowerCase().trim().split(/\s+/);
+        const matches = posts.filter((post: any) => {
+          const text = [post.title, post.excerpt, post.category?.title].join(" ").toLowerCase();
+          return terms.every((term: string) => text.includes(term));
+        });
+        status.textContent = matches.length ? matches.length + " article(s) found." : "No articles found. Try another search.";
+        results.innerHTML = matches.map((post: any) => {
+          const excerpt = post.excerpt || "";
+          const date = post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : "";
+          return '<article class="border-b border-[var(--line)] pb-5"><p class="text-xs font-semibold uppercase tracking-wider text-[var(--rose)]">' + escapeHtml(post.category?.title || "Article") + '</p><h2 class="mt-2 text-xl font-bold"><a href="/' + encodeURIComponent(post.slug) + '/">' + escapeHtml(post.title) + '</a></h2><p class="mt-2 text-sm leading-6 text-[var(--muted)]">' + escapeHtml(excerpt) + '</p><p class="mt-3 text-xs text-[var(--muted)]">' + escapeHtml(date) + '</p></article>';
+        }).join("");
+      } catch {
+        status.textContent = "Search is temporarily unavailable. Please try again later.";
+      }
+    }
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const query = input?.value || "";
+      const url = new URL(window.location.href);
+      url.searchParams.set("q", query);
+      window.history.replaceState({}, "", url);
+      runSearch(query);
+    });
+    const initialQuery = new URLSearchParams(window.location.search).get("q") || "";
+    if (input) input.value = initialQuery;
+    if (initialQuery) runSearch(initialQuery);
+  </script>
+</MainLayout>
