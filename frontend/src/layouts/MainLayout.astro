@@ -13,7 +13,7 @@ const canonical = new URL(Astro.url.pathname, "https://love-catalogue.pages.dev"
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
-    <meta name="theme-color" content="#fffdfb" />
+    <meta name="theme-color" content="#ffffff" />
     <link rel="canonical" href={canonical} />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Love Catalogue" />
@@ -24,23 +24,24 @@ const canonical = new URL(Astro.url.pathname, "https://love-catalogue.pages.dev"
     <link rel="preconnect" href="https://cdn.sanity.io" />
   </head>
   <body>
-    <header class="border-b border-[var(--line)] bg-white">
-      <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-5">
-        <a href="/" class="text-2xl font-bold tracking-tight">Love Catalogue</a>
-        <div class="flex items-center gap-5">
-          <nav aria-label="Main navigation" class="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-            <a href="/">Home</a>
-            <a href="/category/relationships/">Relationships</a>
-            <a href="/category/dating/">Dating</a>
-            <a href="/category/love-messages/">Love Messages</a>
-            <a href="/about/">About</a>
-          </nav>
-          <a href="/search/" aria-label="Search articles" class="inline-flex items-center gap-2 text-sm font-semibold">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
-            Search
-          </a>
-        </div>
+    <header class="site-header">
+      <div class="site-brand-row">
+        <a href="/" class="site-brand" aria-label="Love Catalogue home">
+          <span class="site-brand-name">Love Catalogue</span>
+          <span class="site-brand-tagline">Love · Relationship · Romance</span>
+        </a>
       </div>
+      <nav aria-label="Main navigation" class="site-nav">
+        <a href="/">Home</a>
+        <a href="/category/relationships/">Relationships</a>
+        <a href="/category/dating/">Dating</a>
+        <a href="/category/love-messages/">Love Messages</a>
+        <a href="/about/">About</a>
+        <a href="/search/" class="nav-search">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+          <span>Search</span>
+        </a>
+      </nav>
     </header>
     <main><slot /></main>
     <footer class="mt-16 border-t border-[var(--line)] bg-white">
