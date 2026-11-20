@@ -5,106 +5,77 @@ import { sanityConfigured, sanityFetch } from "../lib/sanity";
 import { homePostsQuery, featuredPostsQuery } from "../lib/queries";
 import { imageUrl } from "../lib/images";
 
-const posts = sanityConfigured
-  ? await sanityFetch<any[]>(homePostsQuery).catch(() => [])
-  : [];
-const featuredPosts = sanityConfigured
-  ? await sanityFetch<any[]>(featuredPostsQuery).catch(() => [])
-  : [];
-const featured = (featuredPosts.length ? featuredPosts : posts).slice(0, 3);
+const posts = sanityConfigured ? await sanityFetch<any[]>(homePostsQuery).catch(() => []) : [];
+const featuredPosts = sanityConfigured ? await sanityFetch<any[]>(featuredPostsQuery).catch(() => []) : [];
+const additionalPosts = posts.filter(post => !featuredPosts.some(item => item._id === post._id));
+const featured = [...featuredPosts, ...additionalPosts].slice(0, 5);
 ---
 <MainLayout title="Love Catalogue | Love, Dating & Relationships">
-  <section class="featured-section">
-    <div class="mx-auto max-w-6xl px-5 pt-9 pb-12">
-      <div class="section-heading">
-        <span class="eyebrow">Love Catalogue</span>
-        <h1>Stories for every side of love</h1>
-      </div>
-
-      {featured.length ? (
-        <div class="featured-grid">
-          {featured.map((post, index) => {
-            const cover = imageUrl(post.mainImage, 1100);
-            return (
-              <article class:list={["featured-card", index === 0 && "featured-card-large"]}>
-                <a href={`/${post.slug}/`} class="featured-card-image" style={cover ? `background-image: url("${cover}")` : undefined}>
-                  <span class="featured-image-shade"></span>
-                  <span class="featured-white-panel">
-                    {post.category?.title && <span class="featured-category">{post.category.title}</span>}
-                    <span class="featured-title">{post.title}</span>
-                    <span class="featured-read-more">+ READ MORE</span>
-                  </span>
-                </a>
-              </article>
-            );
-          })}
-        </div>
-      ) : (
-        <div class="empty-featured">
-          <h2>Your featured stories will appear here.</h2>
-          <p>Mark published articles as featured in Sanity to display them in this section.</p>
-        </div>
-      )}
-    </div>
-  </section>
-
-  <div class="mx-auto grid max-w-6xl gap-12 px-5 py-12 lg:grid-cols-[minmax(0,1fr)_280px]">
-    <section>
-      <div class="mb-7 flex items-end justify-between">
-        <div>
-          <p class="eyebrow">Fresh from the journal</p>
-          <h2 class="mt-2 text-3xl font-bold">Latest articles</h2>
-        </div>
-      </div>
-
-      {posts.length ? (
-        <div class="grid gap-x-7 gap-y-10 sm:grid-cols-2">
-          {posts.map((post) => <ArticleCard post={post} />)}
-        </div>
-      ) : (
-        <div class="border border-dashed border-[var(--line)] p-8">
-          <h3 class="text-xl font-bold">Your publication is ready for content.</h3>
-          <p class="mt-2 max-w-xl text-sm leading-6 text-[var(--muted)]">
-            Publish your first article in Sanity. Published posts will appear here automatically after the next build.
-          </p>
-        </div>
-      )}
-    </section>
-
-    <aside class="space-y-8">
-      <section class="border-t-2 border-[var(--ink)] pt-4">
-        <h2 class="text-xl font-bold">Explore topics</h2>
-        <ul class="mt-4 space-y-3 text-sm">
-          <li><a href="/category/relationships/">Relationships</a></li>
-          <li><a href="/category/dating/">Dating</a></li>
-          <li><a href="/category/love-messages/">Love Messages</a></li>
-        </ul>
-      </section>
-    </aside>
+<section class="featured-section" aria-label="Featured articles"><div class="featured-shell">
+{featured.length ? <div class="featured-carousel" data-featured-carousel>
+  <div class="featured-track" data-featured-track>
+  {featured.map(post => {
+    const cover = imageUrl(post.mainImage, 1800);
+    return <article class="featured-slide"><a href={`/${post.slug}/`} class="featured-slide-image" style={cover ? `background-image:url("${cover}")` : undefined} aria-label={`Read ${post.title}`}>
+      <span class="featured-image-shade"></span><span class="featured-white-panel">
+      {post.category?.title && <span class="featured-category">{post.category.title}</span>}
+      <span class="featured-title">{post.title}</span><span class="featured-read-more">+ READ MORE</span>
+      </span></a></article>;
+  })}
   </div>
-</MainLayout>
+  {featured.length > 1 && <>
+    <button class="carousel-arrow carousel-prev" type="button" data-featured-prev aria-label="Previous featured article"><span aria-hidden="true">‹</span></button>
+    <button class="carousel-arrow carousel-next" type="button" data-featured-next aria-label="Next featured article"><span aria-hidden="true">›</span></button>
+    <div class="carousel-count" aria-live="polite"><span data-featured-current>1</span> / {featured.length}</div>
+  </>}
+</div> : <div class="empty-featured"><h1>Featured stories</h1><p>Publish articles in Sanity to display them in this section.</p></div>}
+</div></section>
 
+<div class="mx-auto grid max-w-6xl gap-12 px-5 py-12 lg:grid-cols-[minmax(0,1fr)_280px]">
+<section><div class="mb-7"><p class="eyebrow">Fresh from the journal</p><h2 class="mt-2 text-3xl font-bold">Latest articles</h2></div>
+{posts.length ? <div class="grid gap-x-7 gap-y-10 sm:grid-cols-2">{posts.map(post => <ArticleCard post={post} />)}</div> :
+<div class="border border-dashed border-[var(--line)] p-8"><h3 class="text-xl font-bold">Your publication is ready for content.</h3><p class="mt-2 max-w-xl text-sm leading-6 text-[var(--muted)]">Publish your first article in Sanity. Published posts will appear here automatically after the next build.</p></div>}
+</section>
+<aside><section class="border-t-2 border-[var(--ink)] pt-4"><h2 class="text-xl font-bold">Explore topics</h2><ul class="mt-4 space-y-3 text-sm">
+<li><a href="/category/relationships/">Relationships</a></li><li><a href="/category/dating/">Dating</a></li><li><a href="/category/love-messages/">Love Messages</a></li>
+</ul></section></aside>
+</div>
+</MainLayout>
 <style>
-  .featured-section { background: #fff; }
-  .section-heading { margin-bottom: 1.5rem; text-align: center; }
-  .section-heading h1 { margin-top: .45rem; font-size: clamp(1.8rem, 3vw, 2.5rem); font-weight: 700; letter-spacing: -.035em; }
-  .eyebrow { color: var(--rose); font-size: .7rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
-  .featured-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.4rem; align-items: stretch; }
-  .featured-card { min-width: 0; }
-  .featured-card-image { position: relative; display: flex; min-height: 350px; height: 100%; align-items: flex-end; justify-content: center; overflow: hidden; background-color: #eee5e1; background-position: center; background-size: cover; padding: 1.1rem; }
-  .featured-card-large .featured-card-image { min-height: 410px; }
-  .featured-image-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(30,20,20,.02) 35%, rgba(30,20,20,.28) 100%); transition: background .25s ease; }
-  .featured-card-image:hover .featured-image-shade { background: rgba(30,20,20,.18); }
-  .featured-white-panel { position: relative; z-index: 1; display: flex; width: min(100%, 390px); flex-direction: column; align-items: flex-start; background: rgba(255,255,255,.96); padding: 1.15rem 1.25rem; text-align: left; }
-  .featured-category { color: var(--rose); font-size: .66rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; }
-  .featured-title { margin-top: .45rem; font-size: clamp(1.1rem, 1.5vw, 1.45rem); font-weight: 700; line-height: 1.25; }
-  .featured-read-more { margin-top: .8rem; font-size: .65rem; font-weight: 700; letter-spacing: .1em; }
-  .empty-featured { border: 1px dashed var(--line); padding: 3rem 1.5rem; text-align: center; }
-  .empty-featured h2 { font-size: 1.35rem; font-weight: 700; }
-  .empty-featured p { margin-top: .5rem; color: var(--muted); font-size: .9rem; }
-  @media (max-width: 760px) {
-    .featured-grid { grid-template-columns: 1fr; }
-    .featured-card-image, .featured-card-large .featured-card-image { min-height: 330px; }
-    .featured-white-panel { width: min(100%, 420px); }
-  }
+.featured-section{background:#fff;padding:1.25rem 0 2rem}.featured-shell{width:min(100% - 2.5rem,1240px);margin:0 auto}
+.featured-carousel{position:relative}.featured-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none}
+.featured-track::-webkit-scrollbar{display:none}.featured-slide{flex:0 0 100%;min-width:0;scroll-snap-align:start}
+.featured-slide-image{position:relative;display:flex;min-height:clamp(390px,53vw,610px);align-items:flex-end;overflow:hidden;background-color:#eee5e1;background-position:center 38%;background-size:cover;padding:clamp(1rem,4vw,3rem)}
+.featured-image-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,15,15,.28),rgba(20,15,15,.02) 75%);transition:background .3s ease}
+.featured-slide-image:hover .featured-image-shade{background:linear-gradient(90deg,rgba(20,15,15,.38),rgba(20,15,15,.05) 80%)}
+.featured-white-panel{position:relative;z-index:1;display:flex;width:min(100%,460px);flex-direction:column;align-items:flex-start;background:rgba(255,255,255,.97);padding:clamp(1.25rem,3vw,2rem);text-align:left;box-shadow:0 8px 30px rgba(0,0,0,.08)}
+.featured-category{color:var(--rose);font-family:Arial,sans-serif;font-size:.68rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase}
+.featured-title{margin-top:.65rem;color:var(--ink);font-size:clamp(1.45rem,3vw,2.35rem);font-weight:700;line-height:1.16}
+.featured-read-more{margin-top:1rem;color:var(--ink);font-family:Arial,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.1em}
+.carousel-arrow{position:absolute;z-index:2;top:50%;display:grid;width:46px;height:46px;place-items:center;transform:translateY(-50%);border:0;border-radius:50%;background:rgba(255,255,255,.94);color:#24211f;box-shadow:0 2px 12px rgba(0,0,0,.16);cursor:pointer;transition:background .2s ease,transform .2s ease}
+.carousel-arrow:hover{background:#fff;transform:translateY(-50%) scale(1.06)}.carousel-arrow span{margin-top:-4px;font-family:Arial,sans-serif;font-size:2rem;line-height:1}
+.carousel-prev{left:14px}.carousel-next{right:14px}.carousel-count{position:absolute;right:1rem;bottom:1rem;z-index:2;padding:.4rem .65rem;background:rgba(255,255,255,.92);color:var(--ink);font-family:Arial,sans-serif;font-size:.7rem;font-weight:700}
+.eyebrow{color:var(--rose);font-size:.7rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase}
+.empty-featured{border:1px dashed var(--line);padding:3rem 1.5rem;text-align:center}.empty-featured h1{font-size:1.5rem;font-weight:700}.empty-featured p{margin-top:.5rem;color:var(--muted);font-size:.9rem}
+@media(max-width:640px){.featured-shell{width:min(100% - 1.25rem,1240px)}.featured-section{padding-top:.75rem}.featured-slide-image{min-height:440px;padding:.85rem;background-position:center}.featured-white-panel{width:min(100%,420px);padding:1.1rem}.carousel-arrow{width:38px;height:38px}.carousel-prev{left:8px}.carousel-next{right:8px}}
 </style>
+<script>
+const carousel=document.querySelector("[data-featured-carousel]");
+const track=carousel?.querySelector("[data-featured-track]");
+const slides=track?Array.from(track.children):[];
+const previous=carousel?.querySelector("[data-featured-prev]");
+const next=carousel?.querySelector("[data-featured-next]");
+const currentLabel=carousel?.querySelector("[data-featured-current]");
+if(track&&slides.length>1){
+ let activeIndex=0;let timer;
+ const goTo=index=>{activeIndex=(index+slides.length)%slides.length;track.scrollTo({left:activeIndex*track.clientWidth,behavior:"smooth"});if(currentLabel)currentLabel.textContent=String(activeIndex+1)};
+ const stopAutoSlide=()=>window.clearInterval(timer);
+ const startAutoSlide=()=>{stopAutoSlide();timer=window.setInterval(()=>goTo(activeIndex+1),6000)};
+ previous?.addEventListener("click",()=>{goTo(activeIndex-1);startAutoSlide()});
+ next?.addEventListener("click",()=>{goTo(activeIndex+1);startAutoSlide()});
+ track.addEventListener("scroll",()=>{activeIndex=Math.round(track.scrollLeft/track.clientWidth);if(currentLabel)currentLabel.textContent=String(activeIndex+1)},{passive:true});
+ carousel.addEventListener("mouseenter",stopAutoSlide);carousel.addEventListener("mouseleave",startAutoSlide);
+ carousel.addEventListener("focusin",stopAutoSlide);carousel.addEventListener("focusout",startAutoSlide);
+ startAutoSlide();
+}
+</script>
