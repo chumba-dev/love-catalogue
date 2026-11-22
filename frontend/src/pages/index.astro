@@ -9,73 +9,206 @@ const posts = sanityConfigured ? await sanityFetch<any[]>(homePostsQuery).catch(
 const featuredPosts = sanityConfigured ? await sanityFetch<any[]>(featuredPostsQuery).catch(() => []) : [];
 const additionalPosts = posts.filter(post => !featuredPosts.some(item => item._id === post._id));
 const featured = [...featuredPosts, ...additionalPosts].slice(0, 5);
+
+const categorySections = [
+  { title: "Relationships", slug: "relationships", description: "Thoughtful reads about building healthy connections." },
+  { title: "Dating", slug: "dating", description: "Ideas and guidance for the dating journey." },
+  { title: "Love Messages", slug: "love-messages", description: "Words to help you express what matters." },
+].map(category => ({
+  ...category,
+  posts: posts.filter(post => post.category?.slug === category.slug).slice(0, 3),
+}));
 ---
 <MainLayout title="Love Catalogue | Love, Dating & Relationships">
-<section class="featured-section" aria-label="Featured articles"><div class="featured-shell">
-{featured.length ? <div class="featured-carousel" data-featured-carousel>
-  <div class="featured-track" data-featured-track>
-  {featured.map(post => {
-    const cover = imageUrl(post.mainImage, 1800);
-    return <article class="featured-slide"><a href={`/${post.slug}/`} class="featured-slide-image" style={cover ? `background-image:url("${cover}")` : undefined} aria-label={`Read ${post.title}`}>
-      <span class="featured-image-shade"></span><span class="featured-white-panel">
-      {post.category?.title && <span class="featured-category">{post.category.title}</span>}
-      <span class="featured-title">{post.title}</span><span class="featured-read-more">+ READ MORE</span>
-      </span></a></article>;
-  })}
-  </div>
-  {featured.length > 1 && <>
-    <button class="carousel-arrow carousel-prev" type="button" data-featured-prev aria-label="Previous featured article"><span aria-hidden="true">‹</span></button>
-    <button class="carousel-arrow carousel-next" type="button" data-featured-next aria-label="Next featured article"><span aria-hidden="true">›</span></button>
-    <div class="carousel-count" aria-live="polite"><span data-featured-current>1</span> / {featured.length}</div>
-  </>}
-</div> : <div class="empty-featured"><h1>Featured stories</h1><p>Publish articles in Sanity to display them in this section.</p></div>}
-</div></section>
+  <section class="featured-section" aria-label="Featured articles">
+    <div class="featured-shell">
+      {featured.length ? (
+        <div class="featured-carousel" data-featured-carousel>
+          <div class="featured-track" data-featured-track>
+            {featured.map(post => {
+              const cover = imageUrl(post.mainImage, 1800);
+              return (
+                <article class="featured-slide">
+                  <a href={`/${post.slug}/`} class="featured-slide-image" style={cover ? `background-image:url("${cover}")` : undefined} aria-label={`Read ${post.title}`}>
+                    <span class="featured-image-shade"></span>
+                    <span class="featured-white-panel">
+                      {post.category?.title && <span class="featured-category">{post.category.title}</span>}
+                      <span class="featured-title">{post.title}</span>
+                      <span class="featured-read-more">+ READ MORE</span>
+                    </span>
+                  </a>
+                </article>
+              );
+            })}
+          </div>
+          {featured.length > 1 && (
+            <>
+              <button class="carousel-arrow carousel-prev" type="button" data-featured-prev aria-label="Previous featured article"><span aria-hidden="true">‹</span></button>
+              <button class="carousel-arrow carousel-next" type="button" data-featured-next aria-label="Next featured article"><span aria-hidden="true">›</span></button>
+              <div class="carousel-count" aria-live="polite"><span data-featured-current>1</span> / {featured.length}</div>
+            </>
+          )}
+        </div>
+      ) : (
+        <div class="empty-featured"><h1>Featured stories</h1><p>Publish articles in Sanity to display them in this section.</p></div>
+      )}
+    </div>
+  </section>
 
-<div class="mx-auto grid max-w-6xl gap-12 px-5 py-12 lg:grid-cols-[minmax(0,1fr)_280px]">
-<section><div class="mb-7"><p class="eyebrow">Fresh from the journal</p><h2 class="mt-2 text-3xl font-bold">Latest articles</h2></div>
-{posts.length ? <div class="grid gap-x-7 gap-y-10 sm:grid-cols-2">{posts.map(post => <ArticleCard post={post} />)}</div> :
-<div class="border border-dashed border-[var(--line)] p-8"><h3 class="text-xl font-bold">Your publication is ready for content.</h3><p class="mt-2 max-w-xl text-sm leading-6 text-[var(--muted)]">Publish your first article in Sanity. Published posts will appear here automatically after the next build.</p></div>}
-</section>
-<aside><section class="border-t-2 border-[var(--ink)] pt-4"><h2 class="text-xl font-bold">Explore topics</h2><ul class="mt-4 space-y-3 text-sm">
-<li><a href="/category/relationships/">Relationships</a></li><li><a href="/category/dating/">Dating</a></li><li><a href="/category/love-messages/">Love Messages</a></li>
-</ul></section></aside>
-</div>
+  <div class="home-content">
+    <section class="latest-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Fresh from the journal</p>
+          <h2>Latest Articles</h2>
+          <p class="section-intro">New perspectives, thoughtful advice and words worth sharing.</p>
+        </div>
+        <a class="section-link" href="/search/">Explore all articles <span aria-hidden="true">→</span></a>
+      </div>
+
+      {posts.length ? (
+        <div class="latest-grid">
+          {posts.slice(0, 6).map(post => <ArticleCard post={post} />)}
+        </div>
+      ) : (
+        <div class="empty-content">
+          <h3>Your publication is ready for content.</h3>
+          <p>Publish your first article in Sanity. Published posts will appear here after the next build.</p>
+        </div>
+      )}
+    </section>
+
+    <aside class="home-sidebar">
+      <section class="sidebar-block">
+        <p class="eyebrow">Handpicked for you</p>
+        <h2>Editor's Picks</h2>
+        {featuredPosts.length ? (
+          <ol class="editor-picks">
+            {featuredPosts.slice(0, 4).map((post, index) => (
+              <li>
+                <span class="pick-number">{String(index + 1).padStart(2, "0")}</span>
+                <div>
+                  {post.category?.title && <span class="pick-category">{post.category.title}</span>}
+                  <a href={`/${post.slug}/`}>{post.title}</a>
+                </div>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p class="sidebar-note">Mark articles as Featured in Sanity to show your editor's picks here.</p>
+        )}
+      </section>
+
+      <section class="sidebar-block topics-block">
+        <p class="eyebrow">Browse by interest</p>
+        <h2>Explore Topics</h2>
+        <a href="/category/relationships/">Relationships <span>→</span></a>
+        <a href="/category/dating/">Dating <span>→</span></a>
+        <a href="/category/love-messages/">Love Messages <span>→</span></a>
+      </section>
+    </aside>
+  </div>
+
+  <div class="category-sections">
+    {categorySections.map(category => category.posts.length > 0 && (
+      <section class="category-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Explore the collection</p>
+            <h2>{category.title}</h2>
+            <p class="section-intro">{category.description}</p>
+          </div>
+          <a class="section-link" href={`/category/${category.slug}/`}>View all <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="category-grid">
+          {category.posts.map(post => <ArticleCard post={post} />)}
+        </div>
+      </section>
+    ))}
+  </div>
 </MainLayout>
+
 <style>
-.featured-section{background:#fff;padding:1.25rem 0 2rem}.featured-shell{width:min(100% - 2.5rem,1240px);margin:0 auto}
-.featured-carousel{position:relative}.featured-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none}
-.featured-track::-webkit-scrollbar{display:none}.featured-slide{flex:0 0 100%;min-width:0;scroll-snap-align:start}
-.featured-slide-image{position:relative;display:flex;min-height:clamp(340px,42vw,500px);align-items:center;justify-content: center;overflow:hidden;background-color:#eee5e1;background-position:center 38%;background-size:cover;padding:clamp(1rem,4vw,3rem)}
-.featured-image-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,15,15,.28),rgba(20,15,15,.02) 75%);transition:background .3s ease}
-.featured-slide-image:hover .featured-image-shade{background:linear-gradient(90deg,rgba(20,15,15,.38),rgba(20,15,15,.05) 80%)}
-.featured-white-panel{position:relative;z-index:1;display:flex;width:min(100%,460px);flex-direction:column;align-items:flex-start;background:rgba(255,255,255,.97);padding:clamp(1.25rem,3vw,2rem);text-align:left;box-shadow:0 8px 30px rgba(0,0,0,.08)}
-.featured-category{color:var(--rose);font-family:Arial,sans-serif;font-size:.68rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase}
-.featured-title{margin-top:.65rem;color:var(--ink);font-size:clamp(1.45rem,3vw,2.35rem);font-weight:700;line-height:1.16}
-.featured-read-more{margin-top:1rem;color:var(--ink);font-family:Arial,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.1em}
-.carousel-arrow{position:absolute;z-index:2;top:50%;display:grid;width:46px;height:46px;place-items:center;transform:translateY(-50%);border:0;border-radius:50%;background:rgba(255,255,255,.94);color:#24211f;box-shadow:0 2px 12px rgba(0,0,0,.16);cursor:pointer;transition:background .2s ease,transform .2s ease}
-.carousel-arrow:hover{background:#fff;transform:translateY(-50%) scale(1.06)}.carousel-arrow span{margin-top:-4px;font-family:Arial,sans-serif;font-size:2rem;line-height:1}
-.carousel-prev{left:14px}.carousel-next{right:14px}.carousel-count{position:absolute;right:1rem;bottom:1rem;z-index:2;padding:.4rem .65rem;background:rgba(255,255,255,.92);color:var(--ink);font-family:Arial,sans-serif;font-size:.7rem;font-weight:700}
-.eyebrow{color:var(--rose);font-size:.7rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase}
-.empty-featured{border:1px dashed var(--line);padding:3rem 1.5rem;text-align:center}.empty-featured h1{font-size:1.5rem;font-weight:700}.empty-featured p{margin-top:.5rem;color:var(--muted);font-size:.9rem}
-@media(max-width:640px){.featured-shell{width:min(100% - 1.25rem,1240px)}.featured-section{padding-top:.75rem}.featured-slide-image{min-height:360px;padding:.85rem;background-position:center}.featured-white-panel{width:min(100%,420px);padding:1.1rem}.carousel-arrow{width:38px;height:38px}.carousel-prev{left:8px}.carousel-next{right:8px}}
+  .featured-section{background:#fff;padding:1.25rem 0 2rem}
+  .featured-shell{width:min(100% - 2.5rem,1240px);margin:0 auto}
+  .featured-carousel{position:relative}
+  .featured-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none}
+  .featured-track::-webkit-scrollbar{display:none}
+  .featured-slide{flex:0 0 100%;min-width:0;scroll-snap-align:start}
+  .featured-slide-image{position:relative;display:flex;min-height:clamp(340px,42vw,500px);align-items:center;justify-content:center;overflow:hidden;background-color:#eee5e1;background-position:center 38%;background-size:cover;padding:clamp(1rem,4vw,3rem)}
+  .featured-image-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,15,15,.28),rgba(20,15,15,.02) 75%);transition:background .3s ease}
+  .featured-slide-image:hover .featured-image-shade{background:linear-gradient(90deg,rgba(20,15,15,.38),rgba(20,15,15,.05) 80%)}
+  .featured-white-panel{position:relative;z-index:1;display:flex;width:min(100%,460px);flex-direction:column;align-items:flex-start;background:rgba(255,255,255,.97);padding:clamp(1.25rem,3vw,2rem);text-align:left;box-shadow:0 8px 30px rgba(0,0,0,.08)}
+  .featured-category{color:var(--rose);font-family:Arial,sans-serif;font-size:.68rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase}
+  .featured-title{margin-top:.65rem;color:var(--ink);font-size:clamp(1.45rem,3vw,2.35rem);font-weight:700;line-height:1.16}
+  .featured-read-more{margin-top:1rem;color:var(--ink);font-family:Arial,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.1em}
+  .carousel-arrow{position:absolute;z-index:2;top:50%;display:grid;width:46px;height:46px;place-items:center;transform:translateY(-50%);border:0;border-radius:50%;background:rgba(255,255,255,.94);color:#24211f;box-shadow:0 2px 12px rgba(0,0,0,.16);cursor:pointer;transition:background .2s ease,transform .2s ease}
+  .carousel-arrow:hover{background:#fff;transform:translateY(-50%) scale(1.06)}
+  .carousel-arrow span{margin-top:-4px;font-family:Arial,sans-serif;font-size:2rem;line-height:1}
+  .carousel-prev{left:14px}.carousel-next{right:14px}
+  .carousel-count{position:absolute;right:1rem;bottom:1rem;z-index:2;padding:.4rem .65rem;background:rgba(255,255,255,.92);color:var(--ink);font-family:Arial,sans-serif;font-size:.7rem;font-weight:700}
+  .home-content{display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:3.25rem;width:min(100% - 2.5rem,1240px);margin:0 auto;padding:3rem 0 1.5rem}
+  .section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:1.6rem}
+  .eyebrow{color:var(--rose);font-family:Arial,sans-serif;font-size:.68rem;font-weight:700;letter-spacing:.17em;text-transform:uppercase}
+  .section-heading h2,.sidebar-block h2{margin-top:.45rem;color:var(--ink);font-size:clamp(1.65rem,2.6vw,2.1rem);font-weight:700;line-height:1.15}
+  .section-intro{margin-top:.55rem;color:var(--muted);font-size:.9rem;line-height:1.6}
+  .section-link{flex-shrink:0;color:var(--rose);font-family:Arial,sans-serif;font-size:.75rem;font-weight:700}
+  .section-link span{margin-left:.25rem}
+  .latest-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2.2rem 1.6rem}
+  .home-sidebar{display:flex;flex-direction:column;gap:2.5rem}
+  .sidebar-block{border-top:2px solid var(--ink);padding-top:1rem}
+  .sidebar-block h2{font-size:1.45rem}
+  .editor-picks{margin-top:1.2rem;padding:0;list-style:none}
+  .editor-picks li{display:grid;grid-template-columns:2.2rem minmax(0,1fr);gap:.8rem;padding:1rem 0;border-bottom:1px solid var(--line)}
+  .pick-number{color:#c7b6b0;font-size:1.35rem;font-weight:700;line-height:1.2}
+  .pick-category{display:block;margin-bottom:.35rem;color:var(--rose);font-family:Arial,sans-serif;font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+  .editor-picks a{font-size:1rem;font-weight:700;line-height:1.4}
+  .sidebar-note{margin-top:1rem;color:var(--muted);font-size:.85rem;line-height:1.6}
+  .topics-block>a{display:flex;justify-content:space-between;gap:1rem;padding:.85rem 0;border-bottom:1px solid var(--line);font-size:.9rem;font-weight:600}
+  .topics-block>a span{color:var(--rose)}
+  .category-sections{width:min(100% - 2.5rem,1240px);margin:0 auto;padding:1rem 0 3rem}
+  .category-section{padding:2.25rem 0;border-top:1px solid var(--line)}
+  .category-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.6rem}
+  .empty-featured,.empty-content{border:1px dashed var(--line);padding:2.5rem 1.5rem;text-align:center}
+  .empty-featured h1,.empty-content h3{font-size:1.4rem;font-weight:700}
+  .empty-featured p,.empty-content p{margin-top:.5rem;color:var(--muted);font-size:.9rem;line-height:1.6}
+  @media(max-width:850px){.home-content{grid-template-columns:minmax(0,1fr) 245px;gap:2rem}.category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:680px){.featured-shell,.category-sections{width:min(100% - 1.25rem,1240px)}.featured-section{padding-top:.75rem}.featured-slide-image{min-height:360px;padding:.85rem;background-position:center}.featured-white-panel{width:min(100%,420px);padding:1.1rem}.carousel-arrow{width:38px;height:38px}.carousel-prev{left:8px}.carousel-next{right:8px}.home-content{display:flex;flex-direction:column;width:min(100% - 2rem,1240px);gap:2.5rem;padding-top:2.25rem}.section-heading{align-items:flex-start}.section-link{margin-top:.25rem}.latest-grid{gap:1.8rem 1rem}.category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:1.4rem 1rem}.category-sections{padding-bottom:2rem}}
+  @media(max-width:420px){.latest-grid,.category-grid{grid-template-columns:1fr}.section-heading{flex-direction:column;align-items:flex-start}.section-link{margin-top:0}}
 </style>
+
 <script>
-const carousel=document.querySelector("[data-featured-carousel]");
-const track=carousel?.querySelector("[data-featured-track]");
-const slides=track?Array.from(track.children):[];
-const previous=carousel?.querySelector("[data-featured-prev]");
-const next=carousel?.querySelector("[data-featured-next]");
-const currentLabel=carousel?.querySelector("[data-featured-current]");
-if(track&&slides.length>1){
- let activeIndex=0;let timer;
- const goTo=index=>{activeIndex=(index+slides.length)%slides.length;track.scrollTo({left:activeIndex*track.clientWidth,behavior:"smooth"});if(currentLabel)currentLabel.textContent=String(activeIndex+1)};
- const stopAutoSlide=()=>window.clearInterval(timer);
- const startAutoSlide=()=>{stopAutoSlide();timer=window.setInterval(()=>goTo(activeIndex+1),6000)};
- previous?.addEventListener("click",()=>{goTo(activeIndex-1);startAutoSlide()});
- next?.addEventListener("click",()=>{goTo(activeIndex+1);startAutoSlide()});
- track.addEventListener("scroll",()=>{activeIndex=Math.round(track.scrollLeft/track.clientWidth);if(currentLabel)currentLabel.textContent=String(activeIndex+1)},{passive:true});
- carousel.addEventListener("mouseenter",stopAutoSlide);carousel.addEventListener("mouseleave",startAutoSlide);
- carousel.addEventListener("focusin",stopAutoSlide);carousel.addEventListener("focusout",startAutoSlide);
- startAutoSlide();
-}
+  const carousel = document.querySelector("[data-featured-carousel]");
+  const track = carousel?.querySelector("[data-featured-track]");
+  const slides = track ? Array.from(track.children) : [];
+  const previous = carousel?.querySelector("[data-featured-prev]");
+  const next = carousel?.querySelector("[data-featured-next]");
+  const currentLabel = carousel?.querySelector("[data-featured-current]");
+
+  if (track && slides.length > 1) {
+    let activeIndex = 0;
+    let timer;
+    const goTo = index => {
+      activeIndex = (index + slides.length) % slides.length;
+      track.scrollTo({ left: activeIndex * track.clientWidth, behavior: "smooth" });
+      if (currentLabel) currentLabel.textContent = String(activeIndex + 1);
+    };
+    const stopAutoSlide = () => window.clearInterval(timer);
+    const startAutoSlide = () => {
+      stopAutoSlide();
+      timer = window.setInterval(() => goTo(activeIndex + 1), 6000);
+    };
+
+    previous?.addEventListener("click", () => { goTo(activeIndex - 1); startAutoSlide(); });
+    next?.addEventListener("click", () => { goTo(activeIndex + 1); startAutoSlide(); });
+    track.addEventListener("scroll", () => {
+      activeIndex = Math.round(track.scrollLeft / track.clientWidth);
+      if (currentLabel) currentLabel.textContent = String(activeIndex + 1);
+    }, { passive: true });
+    carousel.addEventListener("mouseenter", stopAutoSlide);
+    carousel.addEventListener("mouseleave", startAutoSlide);
+    carousel.addEventListener("focusin", stopAutoSlide);
+    carousel.addEventListener("focusout", startAutoSlide);
+    startAutoSlide();
+  }
 </script>
