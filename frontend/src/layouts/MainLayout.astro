@@ -1,7 +1,15 @@
 ---
 import "../styles/global.css";
-const { title = "Love Catalogue | Love, Relationships & Romance", description = "Thoughtful reads about love, relationships, dating and romance." } = Astro.props;
-const canonical = new URL(Astro.url.pathname, "https://love-catalogue.pages.dev").toString();
+const {
+  title = "Love Catalogue | Love, Relationships & Romance",
+  description = "Thoughtful reads about love, relationships, dating and romance.",
+  canonicalUrl,
+  ogType = "website",
+  ogImage,
+  structuredData,
+} = Astro.props;
+const canonical = canonicalUrl || new URL(Astro.url.pathname, "https://love-catalogue.pages.dev").toString();
+const schemaText = structuredData ? JSON.stringify(structuredData).replace(/</g, "\\u003c") : "";
 ---
 <!doctype html>
 <html lang="en">
@@ -9,10 +17,16 @@ const canonical = new URL(Astro.url.pathname, "https://love-catalogue.pages.dev"
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="description" content={description} /><meta name="generator" content={Astro.generator} />
 <meta name="theme-color" content="#ffffff" /><link rel="canonical" href={canonical} />
-<meta property="og:type" content="website" /><meta property="og:site_name" content="Love Catalogue" />
+<meta property="og:type" content={ogType} /><meta property="og:site_name" content="Love Catalogue" />
 <meta property="og:title" content={title} /><meta property="og:description" content={description} />
-<meta property="og:url" content={canonical} /><title>{title}</title>
+<meta property="og:url" content={canonical} />
+{ogImage && <meta property="og:image" content={ogImage} />}
+<meta name="twitter:card" content={ogImage ? "summary_large_image" : "summary"} />
+<meta name="twitter:title" content={title} /><meta name="twitter:description" content={description} />
+{ogImage && <meta name="twitter:image" content={ogImage} />}
+<title>{title}</title>
 <link rel="preconnect" href="https://cdn.sanity.io" />
+{schemaText && <script type="application/ld+json" set:html={schemaText} />}
 </head>
 <body>
 <header class="site-header">

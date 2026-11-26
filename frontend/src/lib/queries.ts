@@ -12,9 +12,19 @@ export const featuredPostsQuery = `*[_type == "post" && featured == true && defi
 export const postBySlugQuery = `*[_type == "post" && slug.current == $slug && defined(publishedAt)][0]{
   _id, title, "slug": slug.current, excerpt, publishedAt, updatedAt,
   body, mainImage, imageAlt, seoTitle, seoDescription, canonicalUrl,
-  "category": category->{title, "slug": slug.current},
+  "category": category->{_id, title, "slug": slug.current},
   "author": author->{name, "slug": slug.current, bio, image},
   "tags": tags[]->{title, "slug": slug.current}
+}`;
+
+export const relatedPostsQuery = `*[
+  _type == "post" &&
+  defined(publishedAt) &&
+  _id != $currentId &&
+  references($categoryId)
+] | order(publishedAt desc)[0...3]{
+  _id, title, "slug": slug.current, excerpt, mainImage,
+  "category": category->{title, "slug": slug.current}
 }`;
 
 export const pageBySlugQuery = `*[_type == "page" && slug.current == $slug][0]{

@@ -1,9 +1,17 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
 import { sanityConfigured, sanityFetch } from "../lib/sanity";
-import { allPostSlugsQuery, allPageSlugsQuery, postBySlugQuery, pageBySlugQuery } from "../lib/queries";
+import {
+  allPostSlugsQuery,
+  allPageSlugsQuery,
+  postBySlugQuery,
+  pageBySlugQuery,
+  relatedPostsQuery,
+} from "../lib/queries";
 import { imageUrl } from "../lib/images";
 import { toHTML } from "@portabletext/to-html";
+
+const siteUrl = "https://love-catalogue.pages.dev";
 
 export async function getStaticPaths() {
   if (!sanityConfigured) return [];
@@ -14,7 +22,9 @@ export async function getStaticPaths() {
   const postSlugs = new Set(posts.map((item) => item.slug));
   return [
     ...posts.map(({ slug }) => ({ params: { slug }, props: { contentType: "post" } })),
-    ...pages.filter(({ slug }) => !postSlugs.has(slug)).map(({ slug }) => ({ params: { slug }, props: { contentType: "page" } })),
+    ...pages
+      .filter(({ slug }) => slug && !postSlugs.has(slug))
+      .map(({ slug }) => ({ params: { slug }, props: { contentType: "page" } })),
   ];
 }
 
@@ -28,33 +38,148 @@ const page = contentType === "page" && slug
   : null;
 
 if (!post && !page) return Astro.redirect("/404");
-const cover = post ? imageUrl(post.mainImage, 1400) : "";
-const bodyHtml = (post?.body || page?.body) ? toHTML(post?.body || page?.body) : "";
+
+const cover = post ? imageUrl(post.mainImage, 1600) : "";
+const authorImage = post?.author?.image ? imageUrl(post.author.image, 160) : "";
+const content = post || page;
+const bodyHtml = content?.body?.length ? toHTML(content.body) : "";
 const pageTitle = post ? (post.seoTitle || post.title) : (page.seoTitle || page.title);
-const pageDescription = post ? (post.seoDescription || post.excerpt || "") : (page.seoDescription || "");
+const pageDescription = post
+  ? (post.seoDescription || post.excerpt || "")
+  : (page.seoDescription || "");
+const canonical = post?.canonicalUrl || `${siteUrl}/${slug}/`;
+const publishedDate = post?.publishedAt
+  ? new Date(post.publishedAt).toLocaleDateString("en", { year: "numeric", month: "long", day: "numeric" })
+  : "";
+const updatedDate = post?.updatedAt
+  ? new Date(post.updatedAt).toLocaleDateString("en", { year: "numeric", month: "long", day: "numeric" })
+  : "";
+const relatedPosts = post?.category?._id
+  ? await sanityFetch<any[]>(relatedPostsQuery, {
+      categoryId: post.category._id,
+      currentId: post._id,
+    }).catch(() => [])
+  : [];
+const shareUrl = encodeURIComponent(canonical);
+const shareTitle = encodeURIComponent(post?.title || "");
+const articleSchema = post ? {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: post.title,
+  description: pageDescription,
+  image: cover ? [cover] : undefined,
+  datePublished: post.publishedAt,
+  dateModified: post.updatedAt || post.publishedAt,
+  author: post.author?.name
+    ? { "@type": "Person", name: post.author.name }
+    : { "@type": "Organization", name: "Love Catalogue" },
+  mainEntityOfPage: canonical,
+  publisher: { "@type": "Organization", name: "Love Catalogue" },
+} : undefined;
 ---
-<MainLayout title={pageTitle + " | Love Catalogue"} description={pageDescription}>
+<MainLayout
+  title={`${pageTitle} | Love Catalogue`}
+  description={pageDescription}
+  canonicalUrl={canonical}
+  ogType={post ? "article" : "website"}
+  ogImage={cover}
+  structuredData={articleSchema}
+>
   {post ? (
-    <article class="mx-auto max-w-3xl px-5 py-12">
-      <div class="mb-5 text-xs font-semibold uppercase tracking-[.15em] text-[var(--rose)]">
+    <article class="article-shell">
+      <nav class="article-breadcrumb" aria-label="Breadcrumb">
         <a href="/">Home</a>
-        {post.category && <span> / <a href={"/category/" + post.category.slug + "/"}>{post.category.title}</a></span>}
+        {post.category && (
+          <>
+            <span aria-hidden="true">/</span>
+            <a href={`/category/${post.category.slug}/`}>{post.category.title}</a>
+          </>
+        )}
+      </nav>
+
+      <header class="article-header">
+        {post.category && <a class="article-category" href={`/category/${post.category.slug}/`}>{post.category.title}</a>}
+        <h1>{post.title}</h1>
+        {post.excerpt && <p class="article-excerpt">{post.excerpt}</p>}
+
+        <div class="article-byline">
+          {authorImage && (
+            <img class="article-author-image" src={authorImage} alt="" width="48" height="48" />
+          )}
+          <div>
+            <div class="article-author-name">
+              {post.author?.slug
+                ? <a href={`/author/${post.author.slug}/`}>{post.author.name}</a>
+                : (post.author?.name || "Love Catalogue")}
+            </div>
+            <div class="article-date">
+              {publishedDate && <time datetime={post.publishedAt}>{publishedDate}</time>}
+              {updatedDate && post.updatedAt !== post.publishedAt && <span> · Updated {updatedDate}</span>}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {cover && (
+        <figure class="article-cover">
+          <img src={cover} alt={post.imageAlt || post.title} fetchpriority="high" />
+        </figure>
+      )}
+
+      <div class="article-content-wrap">
+        <div class="prose-content article-content" set:html={bodyHtml} />
+
+        {post.tags?.length > 0 && (
+          <div class="article-tags" aria-label="Article tags">
+            <span>Topics:</span>
+            {post.tags.map((tag: any) => (
+              <a href={`/tag/${tag.slug}/`}>{tag.title}</a>
+            ))}
+          </div>
+        )}
+
+        <section class="article-share" aria-label="Share this article">
+          <span>Share this article</span>
+          <a href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`} target="_blank" rel="noopener noreferrer">Facebook</a>
+          <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          <a href={`https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareTitle}`} target="_blank" rel="noopener noreferrer">X</a>
+          <a href={`https://api.whatsapp.com/send?text=${shareTitle}%20${shareUrl}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+        </section>
       </div>
-      <h1 class="text-4xl font-bold leading-tight md:text-5xl">{post.title}</h1>
-      {post.excerpt && <p class="mt-5 text-xl leading-8 text-[var(--muted)]">{post.excerpt}</p>}
-      <div class="mt-5 text-sm text-[var(--muted)]">
-        {post.author?.slug ? <a href={"/author/" + post.author.slug + "/"}>{post.author.name}</a> : (post.author?.name || "Love Catalogue")}
-        {post.publishedAt && <span> · {new Date(post.publishedAt).toLocaleDateString("en", { year: "numeric", month: "long", day: "numeric" })}</span>}
-      </div>
-      {cover && <img src={cover} alt={post.imageAlt || post.title} class="mt-8 aspect-[16/9] w-full object-cover" />}
-      <div class="prose-content mt-9" set:html={bodyHtml} />
-      {post.tags?.length > 0 && <div class="mt-10 flex flex-wrap gap-2">{post.tags.map((tag: any) => <a class="bg-[#f6eeeb] px-3 py-1 text-xs" href={"/tag/" + tag.slug + "/"}>{tag.title}</a>)}</div>}
+
+      {relatedPosts.length > 0 && (
+        <section class="related-section">
+          <div class="related-heading">
+            <p>Keep reading</p>
+            <h2>Related Articles</h2>
+          </div>
+          <div class="related-grid">
+            {relatedPosts.map((item: any) => {
+              const itemImage = imageUrl(item.mainImage, 640);
+              return (
+                <article class="related-card">
+                  <a class="related-image" href={`/${item.slug}/`}>
+                    {itemImage
+                      ? <img src={itemImage} alt={item.mainImage?.alt || item.title} loading="lazy" />
+                      : <span aria-hidden="true" />}
+                  </a>
+                  {item.category && <p class="related-category">{item.category.title}</p>}
+                  <h3><a href={`/${item.slug}/`}>{item.title}</a></h3>
+                  {item.excerpt && <p class="related-excerpt">{item.excerpt}</p>}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </article>
   ) : (
-    <article class="mx-auto max-w-3xl px-5 py-12">
-      <p class="text-xs font-semibold uppercase tracking-[.15em] text-[var(--rose)]"><a href="/">Home</a> / Page</p>
-      <h1 class="mt-4 text-4xl font-bold leading-tight md:text-5xl">{page.title}</h1>
-      <div class="prose-content mt-9" set:html={bodyHtml} />
+    <article class="page-shell">
+      <nav class="article-breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Home</a><span aria-hidden="true">/</span><span>Page</span>
+      </nav>
+      <h1 class="page-title">{page.title}</h1>
+      <div class="prose-content article-content" set:html={bodyHtml} />
     </article>
   )}
 </MainLayout>
