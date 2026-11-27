@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./article-page.css";
+@import "./category-page.css";
 
 :root {
   color-scheme: light;
